@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<title>Каталог</title>
+<style>
+body{font-family:sans-serif;background:linear-gradient(135deg,#5b21b6,#7c3aed,#a78bfa);padding:20px;color:#222}
+.container{max-width:900px;margin:auto;background:#fff;padding:20px;border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,0.2)}
+input,select,textarea{width:100%;margin:6px 0;padding:10px;border-radius:10px;border:1px solid #ddd}
+button{padding:10px;margin-top:6px;background:#6d28d9;color:#fff;border:none;border-radius:10px;cursor:pointer}
+button.delete{background:#dc2626}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-top:10px}
+.cat{padding:12px;border-radius:14px;color:#fff;text-align:center;cursor:pointer;font-weight:600;background:#7c3aed}
+.active{outline:3px solid #000}
+.item{background:#f5f3ff;margin-top:10px;padding:12px;border-radius:12px}
+img{max-width:100%;margin-top:6px;border-radius:10px;cursor:pointer}
+.gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+#modal{position:fixed;inset:0;background:rgba(0,0,0,0.7);display:none;align-items:center;justify-content:center}
+#modal img{max-width:90%;max-height:90%;border-radius:12px}
+.footer{margin-top:20px;text-align:center;font-size:14px;color:#555}
+</style>
+</head>
+<body>
+
+<div class="container">
+<h2>📂 Каталог</h2>
+
+<input type="text" id="search" placeholder="Қидириш..." oninput="render()">
+
+<div class="grid" id="cats"></div>
+
+<select id="category">
+<option>Бонбонерка</option>
+<option>Блокнот</option>
+<option>Таклифнома</option>
+<option>Портрет</option>
+<option>Ламинат</option>
+<option>Магнит дуолар</option>
+<option>Самоклей дуолар</option>
+<option>Видео таклифнома</option>
+</select>
+
+<select id="sub">
+<option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+<option>6</option><option>7</option><option>8</option><option>9</option><option>10</option>
+</select>
+
+<input type="text" id="name" placeholder="Номи">
+<input type="number" id="price" placeholder="Нархи">
+<input type="file" id="images" multiple>
+<textarea id="text" placeholder="Изоҳ"></textarea>
+<button onclick="addItem()">Сақлаш</button>
+
+<div id="list"></div>
+
+<div class="footer">Яратган: Мамутханова Нурбиби</div>
+</div>
+
+<div id="modal" onclick="this.style.display='none'"><img id="big"></div>
+
+<script>
+let list = JSON.parse(localStorage.getItem("data")) || [];
+let currentCat = null;
+
+const categories = [
+"Бонбонерка","Блокнот","Таклифнома","Портрет","Ламинат","Магнит дуолар","Самоклей дуолар","Видео таклифнома"
+];
+
+function drawCats(){
+let cDiv=document.getElementById("cats");
+cDiv.innerHTML="";
+categories.forEach(c=>{
+let el=document.createElement("div");
+el.className="cat"+(currentCat===c?" active":"");
+el.innerText=c;
+el.onclick=()=>{currentCat=c;render();drawCats();}
+;cDiv.appendChild(el);
+});
+}
+
+function render(){
+let search=document.getElementById("search").value.toLowerCase();
+let listDiv=document.getElementById("list");
+listDiv.innerHTML="";
+
+list.forEach((item,i)=>{
+if(currentCat && item.category!==currentCat) return;
+if(!item.name.toLowerCase().includes(search)) return;
+
+let imgs = item.images.map(img=>`<img src="${img}" onclick="showImg('${img}')">`).join("");
+
+listDiv.innerHTML+=`
+<div class="item">
+<b>${item.name}</b> (${item.sub})<br>
+Нархи: ${item.price}<br>
+${item.text}<br>
+<div class="gallery">${imgs}</div>
+<button class="delete" onclick="del(${i})">Ўчириш</button>
+</div>`;
+});
+}
+
+function showImg(src){
+document.getElementById("big").src=src;
+document.getElementById("modal").style.display="flex";
+}
+
+function readFiles(files){
+files = Array.from(files).slice(0,10);
+return Promise.all(files.map(file=>{
+return new Promise(res=>{
+let r=new FileReader();
+r.onload=e=>res(e.target.result);
+r.readAsDataURL(file);
+});
+}));
+}
+
+async function addItem(){
+let category=document.getElementById("category").value;
+let sub=document.getElementById("sub").value;
+let name=document.getElementById("name").value;
+let price=document.getElementById("price").value;
+let text=document.getElementById("text").value;
+let files=document.getElementById("images").files;
+
+if(!name||!price) return alert("Ном ва нарх киритинг");
+
+let images = await readFiles(files);
+
+list.push({category,sub,name,price,text,images});
+localStorage.setItem("data",JSON.stringify(list));
+
+document.getElementById("name").value="";
+document.getElementById("price").value="";
+document.getElementById("text").value="";
+document.getElementById("images").value="";
+
+render();
+}
+
+function del(i){
+list.splice(i,1);
+localStorage.setItem("data",JSON.stringify(list));
+render();
+}
+
+drawCats();
+render();
+</script>
+
+</body>
+</html>
